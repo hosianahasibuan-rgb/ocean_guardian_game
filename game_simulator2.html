@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive UI Simulator - KTI TIK GEMASTIK</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2canvas for Direct PNG Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Google Fonts for Game Aesthetic -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .font-game {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .oil-slick {
+            background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 40%, #020617 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        .oil-slick::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(168,85,247,0.12) 0%, rgba(236,72,153,0.06) 50%, transparent 100%);
+            animation: drift 20s infinite linear;
+            pointer-events: none;
+        }
+        @keyframes drift {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Kelas pembantu saat ekspor gambar agar tidak crash */
+        .no-animation::after {
+            animation: none !important;
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- HEADER UTAMA -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <span class="bg-indigo-500/10 text-indigo-400 text-xs px-3 py-1 rounded-full font-semibold uppercase tracking-wider font-game border border-indigo-500/20">
+                    GEMASTIK KTI TIK - HCI Prototype
+                </span>
+                <h1 class="text-xl font-bold mt-1 text-white tracking-tight">
+                    Interactive Serious Game UI & Framework Simulator
+                </h1>
+                <p class="text-xs text-slate-400 mt-0.5">
+                    Rancangan Media Kampanye Ekosistem Laut Berbasis Naratif untuk Gen-Z
+                </p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="changeTab('simulator')" id="btn-tab-simulator" class="tab-btn px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 transition-all">
+                    1. UI Simulator & Editor
+                </button>
+                <button onclick="changeTab('framework')" id="btn-tab-framework" class="tab-btn px-4 py-2 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">
+                    2. Framework Desain (Bab IV)
+                </button>
+                <button onclick="changeTab('flowchart')" id="btn-tab-flowchart" class="tab-btn px-4 py-2 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">
+                    3. Bagan Alur Logika (Bab III)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- KONTEN UTAMA -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6">
+
+        <!-- TAB 1: UI SIMULATOR & EDITOR -->
+        <section id="tab-simulator" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- PANEL KONTROL / EDITOR (KIRI) -->
+            <div class="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col gap-5">
+                <div>
+                    <h3 class="font-bold text-white text-base">Alat Editor UI (Canva-Like)</h3>
+                    <p class="text-xs text-slate-400 mt-1">Ubah variabel di bawah untuk menyesuaikan visualisasi game secara instan untuk kebutuhan tangkapan layar.</p>
+                </div>
+
+                <hr class="border-slate-800">
+
+                <!-- Pilihan Layar -->
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-bold text-slate-300 uppercase tracking-wider">Pilih Modul Tampilan (Layar)</label>
+                    <div class="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                        <button onclick="selectScreen(1)" id="screen-btn-1" class="screen-btn py-2 text-[10px] font-semibold rounded bg-indigo-600 text-white transition-all">Layar 1: Pasar</button>
+                        <button onclick="selectScreen(2)" id="screen-btn-2" class="screen-btn py-2 text-[10px] font-semibold rounded text-slate-400 hover:text-white transition-all">Layar 2: Pilihan</button>
+                        <button onclick="selectScreen(3)" id="screen-btn-3" class="screen-btn py-2 text-[10px] font-semibold rounded text-slate-400 hover:text-white transition-all">Layar 3: Lab</button>
+                    </div>
+                </div>
+
+                <!-- Input Variabel TIK -->
+                <div class="flex flex-col gap-4">
+                    <h4 class="text-xs font-bold text-indigo-400 uppercase tracking-wider font-game">Metrik & Parameter Sistem</h4>
+                    
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">Kualitas Air Laut (%)</label>
+                        <div class="flex items-center gap-3">
+                            <input type="range" id="input-air" min="0" max="100" value="35" class="w-full accent-indigo-500 bg-slate-850 h-1.5 rounded-lg appearance-none cursor-pointer" oninput="updateMetrics()">
+                            <span id="val-air" class="text-xs font-bold font-game bg-slate-950 px-2 py-1 rounded border border-slate-800 w-12 text-center text-red-400">35%</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">Korban Keracunan (Warga)</label>
+                        <div class="flex items-center gap-3">
+                            <input type="range" id="input-korban" min="0" max="50" value="14" class="w-full accent-indigo-500 bg-slate-850 h-1.5 rounded-lg appearance-none cursor-pointer" oninput="updateMetrics()">
+                            <span id="val-korban" class="text-xs font-bold font-game bg-slate-950 px-2 py-1 rounded border border-slate-800 w-12 text-center text-orange-400">14</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">Pilih Warna Latar Canvas</label>
+                        <div class="grid grid-cols-4 gap-1">
+                            <button onclick="setCanvasBg('#1E293B')" class="w-full h-6 rounded border border-slate-700 bg-[#1E293B]"></button>
+                            <button onclick="setCanvasBg('#0F172A')" class="w-full h-6 rounded border border-slate-700 bg-[#0F172A]"></button>
+                            <button onclick="setCanvasBg('#020617')" class="w-full h-6 rounded border border-slate-700 bg-[#020617]"></button>
+                            <button onclick="setCanvasBg('#111827')" class="w-full h-6 rounded border border-slate-700 bg-[#111827]"></button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">Karakter Nelayan / NPC</label>
+                        <select id="input-npc" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500" onchange="updateNPC()">
+                            <option value="warlok1">Pak Jaka (Warlok / Nelayan Senior)</option>
+                            <option value="warlok2">Ibu Aminah (Pedagang Pasar Pesisir)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">Teks Dialog / Narasi</label>
+                        <textarea id="input-dialog" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none" oninput="updateDialog()"></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-auto bg-indigo-950/20 border border-indigo-900/30 rounded-lg p-3">
+                    <p class="text-[11px] text-indigo-300/90 leading-relaxed">
+                        <strong>Fitur Ekspor Baru:</strong> Kamu sekarang bisa langsung mengunduh gambar hasil desain UI ini dengan menekan tombol <strong>"Ekspor Gambar PNG"</strong> di bawah layar mockup!
+                    </p>
+                </div>
+            </div>
+
+            <!-- PREVIEW KANVAS GAME (KANAN) -->
+            <div class="lg:col-span-8 flex flex-col gap-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-white text-base">Game Canvas Preview (Rasio 16:9)</h3>
+                    <span id="screen-tag" class="text-xs bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-full border border-indigo-500/20 font-game font-bold">Layar 1: Dasbor Pasar</span>
+                </div>
+
+                <!-- CONTAINER RESOLUSI 16:9 -->
+                <div id="game-canvas" class="w-full aspect-[16/9] oil-slick border border-slate-800 rounded-xl shadow-2xl relative flex flex-col justify-between p-6">
+                    
+                    <!-- KELOMPOK ATAS: STATUS BAR / METRIK TIK -->
+                    <div class="flex justify-between items-start z-10">
+                        <!-- Indikator Kiri -->
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <div class="bg-slate-950/90 backdrop-blur border border-red-500/30 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-lg">
+                                <div class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></div>
+                                <span class="text-[10px] sm:text-xs font-bold font-game tracking-wide text-red-400" id="ui-air-display">
+                                    Kualitas Air: 35% (Kritis)
+                                </span>
+                            </div>
+                            <div class="bg-slate-950/90 backdrop-blur border border-orange-500/30 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-lg">
+                                <div class="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse"></div>
+                                <span class="text-[10px] sm:text-xs font-bold font-game tracking-wide text-orange-400" id="ui-korban-display">
+                                    Korban: 14 Warga
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Indikator Kanan (Misi) -->
+                        <div class="bg-slate-950/90 backdrop-blur border border-indigo-500/30 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-lg">
+                            <span class="text-[10px] sm:text-xs font-bold font-game text-indigo-300">MISI: Investigasi Kasus Merkuri Laut</span>
+                        </div>
+                    </div>
+
+                    <!-- KELOMPOK TENGAH: VISUALISASI UTAMA -->
+                    <div id="ui-content-middle" class="flex-grow flex items-center justify-between mt-4 z-10">
+                        <!-- Tempat Karakter Nelayan (Kiri) -->
+                        <div class="w-1/3 h-full flex items-end justify-center pb-2">
+                            <!-- SVG Fisherman Character dengan dimensi eksplisit agar kompatibel dengan html2canvas -->
+                            <svg id="npc-avatar-1" width="160" height="160" class="w-32 sm:w-44 h-auto max-h-full" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Caping/Hat -->
+                                <path d="M50 15 L10 40 L90 40 Z" fill="#b45309"/>
+                                <path d="M50 15 L25 40 L75 40 Z" fill="#d97706"/>
+                                <!-- Face -->
+                                <circle cx="50" cy="52" r="15" fill="#fdba74"/>
+                                <!-- Eyes & Beard -->
+                                <circle cx="45" cy="50" r="1.5" fill="#1e293b"/>
+                                <circle cx="55" cy="50" r="1.5" fill="#1e293b"/>
+                                <path d="M40 58 Q50 68 60 58 Z" fill="#475569"/>
+                                <!-- Body/Clothes -->
+                                <path d="M30 65 C30 65 35 100 50 100 C65 100 70 65 70 65 Z" fill="#1e3a8a"/>
+                                <path d="M42 65 L50 80 L58 65 Z" fill="#fdba74"/>
+                            </svg>
+
+                            <svg id="npc-avatar-2" width="160" height="160" class="w-32 sm:w-44 h-auto max-h-full hidden" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Kerudung/Hijab -->
+                                <path d="M50 20 C32 20 32 45 32 55 C32 75 42 85 50 85 C58 85 68 75 68 55 C68 45 68 20 50 20 Z" fill="#65a30d"/>
+                                <!-- Face -->
+                                <circle cx="50" cy="52" r="13" fill="#fed7aa"/>
+                                <circle cx="46" cy="50" r="1.5" fill="#1e293b"/>
+                                <circle cx="54" cy="50" r="1.5" fill="#1e293b"/>
+                                <path d="M46 56 Q50 60 54 56" stroke="#1e293b" stroke-width="1.5" stroke-linecap="round"/>
+                                <!-- Body/Clothes -->
+                                <path d="M30 75 C30 75 35 100 50 100 C65 100 70 75 70 75 Z" fill="#047857"/>
+                            </svg>
+                        </div>
+
+                        <!-- Tempat Dialog/Interaksi (Kanan) -->
+                        <div class="w-2/3 pl-4 flex flex-col justify-center h-full">
+                            <!-- Speech bubble container -->
+                            <div class="bg-slate-900 border border-slate-700 rounded-xl p-3 sm:p-5 shadow-2xl relative">
+                                <span id="ui-npc-name" class="text-xs text-indigo-400 font-bold uppercase tracking-wider block mb-1">Pak Jaka (Nelayan)</span>
+                                <p id="ui-dialog-text" class="text-xs sm:text-sm text-slate-100 leading-relaxed font-normal">
+                                    "Sejak proyek misterius itu beroperasi di tengah laut, air kita menghitam karena minyak, Dek. Ikan-ikan mati, dan warga yang nekat makan langsung keracunan..."
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KELOMPOK BAWAH: INTERAKSI TOMBOL (KHUSUS LAYAR 2 & 3) -->
+                    <div id="ui-content-bottom" class="w-full flex justify-end gap-2 mt-2 z-10 hidden">
+                        <!-- Akan diisi tombol dinamis melalui js -->
+                    </div>
+                </div>
+
+                <!-- PANEL INFO SKENARIO & UNDUH -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-300">Deskripsi Kasus & Skenario:</h4>
+                        <p id="scenario-desc" class="text-[11px] text-slate-400 mt-1">Layar 1 memperkenalkan masalah utama dari penuturan warga lokal kepada Gen-Z yang baru sampai di lokasi pesisir.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="copyDialogToClipboard()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all">
+                            Salin Teks
+                        </button>
+                        <button onclick="exportCanvasToPNG()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-lg shadow-indigo-600/20">
+                            Ekspor Gambar PNG
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: FRAMEWORK DESAIN (BAB IV) -->
+        <section id="tab-framework" class="tab-content hidden flex flex-col gap-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <div>
+                        <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider font-game">Kontribusi Keilmuan TIK</span>
+                        <h3 class="text-xl font-bold text-white mt-1">Framework Desain Baru: Serious Game Kelautan (HCI)</h3>
+                        <p class="text-xs text-slate-400 mt-1">Gunakan arsitektur konseptual modular ini di dalam naskah Bab IV untuk meyakinkan juri mengenai kontribusi saintifik TIK Anda.</p>
+                    </div>
+                    <div class="bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-semibold text-slate-300">
+                        Bobot Penilaian Metode: 25% | Bab IV
+                    </div>
+                </div>
+
+                <!-- DIAGRAM FRAMEWORK TEKNOLOGI -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950 p-6 rounded-xl border border-slate-800">
+                    
+                    <!-- LAYER 1: USER INTERACTION -->
+                    <div class="border border-indigo-500/20 bg-indigo-950/10 p-5 rounded-lg flex flex-col gap-4">
+                        <div class="bg-indigo-600 text-white font-game font-bold text-xs px-3 py-1.5 rounded-md text-center shadow-lg shadow-indigo-600/10">
+                            Layer 1: User Interaction & HCI
+                        </div>
+                        <p class="text-[11px] text-slate-400 leading-relaxed">Menangani bagaimana pengguna (Gen-Z) menerima rangsangan visual dan kognitif serta memasukkan respon keputusan.</p>
+                        <div class="flex flex-col gap-2 mt-2">
+                            <div class="bg-slate-900 border border-slate-800 p-2.5 rounded text-[11px]">
+                                <strong class="text-indigo-400 block mb-0.5">Choice-Driven Interface:</strong> Pilihan bercabang di layar dialog interaktif.
+                            </div>
+                            <div class="bg-slate-900 border border-slate-800 p-2.5 rounded text-[11px]">
+                                <strong class="text-indigo-400 block mb-0.5">Dynamic Dashboard UI:</strong> Indikator visual real-time parameter air & warga.
+                            </div>
+                            <div class="bg-slate-900 border border-slate-800 p-2.5 rounded text-[11px]">
+                                <strong class="text-indigo-400 block mb-0.5">Investigative Toolkit:</strong> Alat uji lab dan pencatat temuan data/bukti.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LAYER 2: NARRATIVE ENGINE -->
+                    <div class="border border-emerald-500/20 bg-emerald-950/10 p-5 rounded-lg flex flex-col gap-4">
+                        <div class="bg-emerald-600 text-white font-game font-bold text-xs px-3 py-1.5 rounded-md text-center shadow-lg shadow-emerald-600/10">
+                            Layer 2: Contextual Decision Engine
+                        </div>
+                        <p class="text-[11px] text-slate-400 leading-relaxed">Mengolah logika transisi cerita, perubahan status ekologi laut, serta kalkulasi bobot dampak pilihan pemain.</p>
+                        <div class="flex flex-col gap-2 mt-2">
+                            <div class="bg-slate-900 border border-slate-800 p-2.5 rounded text-[11px]">
+                                <strong class="text-emerald-400 block mb-0.5">Branching State Machine:</strong> Algoritma pohon keputusan dialog (Dialog Tree).
+                            </div>
+                            <div class="bg-slate-900 border border-slate-800 p-2.5 rounded text-[11px]">
+                                <strong class="text-emerald-400 block mb-0.5">HCI Evaluator (Contextual Gap):</strong> Penghubung keputusan pemain dengan realitas sains.
+                            </div>
+                            <div class="bg-slate-900 border border-slate-800 p-2.5 rounded text-[11px]">
+                                <strong class="text-emerald-400 block mb-0.5">Quest Progression Logic:</strong> Sistem pengunci misi berdasarkan kebenaran hipotesis.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LAYER 3: DATABASE EKOLOGI LAUT -->
+                    <div class="border border-purple-500/20 bg-purple-950/10 p-5 rounded-lg flex flex-col gap-4">
+                        <div class="bg-purple-600 text-white font-game font-bold text-xs px-3 py-1.5 rounded-md text-center shadow-lg shadow-purple-600/10">
+                            Layer 3: Marine Blue Economy Database
+                        </div>
+                        <p class="text-[11px] text-slate-400 leading-relaxed">Basis data terstruktur yang berisi sains kelautan valid (seperti korelasi tumpahan minyak terhadap oksigen laut).</p>
+                        <div class="flex flex-col gap-2 mt-2">
+                            <div class="bg-slate-900 border border-slate-800 p-2.5 rounded text-[11px]">
+                                <strong class="text-purple-400 block mb-0.5">Oil Contamination Model:</strong> Data matematis laju sebaran dan degradasi minyak.
+                            </div>
+                            <div class="bg-slate-900 border border-slate-800 p-2.5 rounded text-[11px]">
+                                <strong class="text-purple-400 block mb-0.5">Marine Bio-Indicator Data:</strong> Parameter ketahanan ikan/terumbu karang.
+                            </div>
+                            <div class="bg-slate-900 border border-slate-800 p-2.5 rounded text-[11px]">
+                                <strong class="text-purple-400 block mb-0.5">Socio-Ecological Correlation:</strong> Data ketergantungan warga pesisir terhadap laut.
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="mt-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <p class="text-xs text-slate-400">Hubungan alur data: <strong>Layer 1 (Input)</strong> $\rightarrow$ Diolah oleh <strong>Layer 2 (Logika)</strong> $\rightarrow$ Menggunakan data ilmiah dari <strong>Layer 3 (Database)</strong> $\rightarrow$ Menampilkan *feedback loop* berupa visualisasi dampak ekosistem kembali ke Layer 1.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: BAGAN ALUR LOGIKA (BAB III) -->
+        <section id="tab-flowchart" class="tab-content hidden flex flex-col gap-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <div>
+                        <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider font-game">Metodologi & Analisis Sistem</span>
+                        <h3 class="text-xl font-bold text-white mt-1">Bagan Alur Logika (*Flowchart* Game)</h3>
+                        <p class="text-xs text-slate-400 mt-1">Alur pemrosesan logika TIK bagaimana status kualitas air memengaruhi jalannya cerita dan keputusan Gen-Z.</p>
+                    </div>
+                    <div class="bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-semibold text-slate-300">
+                        Bobot Penilaian Hasil & Analisis: 30% | Bab III
+                    </div>
+                </div>
+
+                <!-- CONTAINER FLOWCHART DIAGRAM -->
+                <div class="bg-slate-950 p-6 rounded-xl border border-slate-800 overflow-x-auto">
+                    <div class="min-w-[640px] flex flex-col items-center gap-4 py-4">
+                        
+                        <!-- START -->
+                        <div class="w-32 bg-indigo-600 text-white py-1.5 rounded-full text-center text-xs font-bold font-game shadow-lg">
+                            START
+                        </div>
+
+                        <div class="w-0.5 h-6 bg-slate-700"></div>
+
+                        <!-- PROSES: INISIALISASI -->
+                        <div class="w-64 bg-slate-900 border border-slate-700 p-3 rounded-lg text-center">
+                            <strong class="text-[11px] text-slate-400 block mb-1">PROSES: Inisialisasi Variabel Status</strong>
+                            <p class="text-xs font-game text-white">Kualitas_Air = 70% | Korban = 0<br>Petunjuk_Minyak = 0</p>
+                        </div>
+
+                        <div class="w-0.5 h-6 bg-slate-700"></div>
+
+                        <!-- INPUT/OUTPUT: TAMPILKAN LAYAR 1 -->
+                        <div class="w-64 bg-slate-900 border border-slate-700 p-3 rounded-lg text-center skew-x-[-10deg]">
+                            <div class="skew-x-[10deg]">
+                                <strong class="text-[11px] text-slate-400 block mb-1">I/O: Layar 1 (Pasar)</strong>
+                                <p class="text-xs text-white">Tampilkan masalah harga ikan melonjak tinggi & warga keracunan</p>
+                            </div>
+                        </div>
+
+                        <div class="w-0.5 h-6 bg-slate-700"></div>
+
+                        <!-- KEPUTUSAN PEMAIN -->
+                        <div class="w-48 h-48 bg-slate-900 border border-slate-700 rounded-xl relative flex items-center justify-center p-4 text-center rotate-45">
+                            <div class="-rotate-45">
+                                <strong class="text-[10px] text-indigo-400 block mb-1">PILIHAN GEN-Z</strong>
+                                <p class="text-[11px] text-white font-semibold">Gunakan bantuan Warlok untuk ambil sampel air?</p>
+                            </div>
+                        </div>
+
+                        <!-- PERCABANGAN -->
+                        <div class="w-full max-w-lg flex justify-between px-12 -mt-16 z-10">
+                            <!-- Jalur TIDAK -->
+                            <div class="flex flex-col items-center gap-2">
+                                <span class="text-xs text-red-400 font-bold bg-slate-950 px-2 py-0.5 rounded border border-red-500/20">TIDAK (Layar 2)</span>
+                                <div class="w-0.5 h-16 bg-slate-700"></div>
+                                <div class="w-48 bg-slate-900 border border-slate-700 p-2.5 rounded-lg text-center">
+                                    <strong class="text-[10px] text-red-400 block mb-0.5">SISTEM: Kenaikan Dampak</strong>
+                                    <p class="text-[11px] text-slate-300">Korban bertambah +5<br>Petunjuk_Minyak = 0</p>
+                                </div>
+                                <div class="w-0.5 h-10 bg-slate-700"></div>
+                                <div class="w-32 bg-slate-800 text-slate-300 py-1 rounded text-center text-[10px] font-semibold">Kembali ke Misi 1</div>
+                            </div>
+
+                            <!-- Jalur YA -->
+                            <div class="flex flex-col items-center gap-2">
+                                <span class="text-xs text-emerald-400 font-bold bg-slate-950 px-2 py-0.5 rounded border border-emerald-500/20">YA (Layar 2)</span>
+                                <div class="w-0.5 h-16 bg-slate-700"></div>
+                                <div class="w-48 bg-slate-900 border border-slate-700 p-2.5 rounded-lg text-center">
+                                    <strong class="text-[10px] text-emerald-400 block mb-0.5">SISTEM: Unlock Fitur Lab</strong>
+                                    <p class="text-[11px] text-slate-300">Kualitas_Air turun ke 35%<br>Petunjuk_Minyak = 1</p>
+                                </div>
+                                <div class="w-0.5 h-10 bg-slate-700"></div>
+                                <!-- SCREEN 3 LAB -->
+                                <div class="w-48 bg-slate-900 border border-slate-700 p-2.5 rounded-lg text-center skew-x-[-10deg]">
+                                    <div class="skew-x-[10deg]">
+                                        <strong class="text-[10px] text-slate-400 block mb-0.5">I/O: Layar 3 (Uji Lab)</strong>
+                                        <p class="text-[11px] text-slate-300">Sistem memindai & membuktikan kadar tumpahan minyak proyek ilegal</p>
+                                    </div>
+                                </div>
+                                <div class="w-0.5 h-6 bg-slate-700"></div>
+                                <div class="w-32 bg-indigo-600 text-white py-1.5 rounded-full text-center text-xs font-bold font-game shadow-lg">
+                                    END GAME
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER DAN TANDA TANGAN KTI -->
+    <footer class="border-t border-slate-900 bg-slate-950 py-6 text-center text-xs text-slate-500 px-6">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p>© 2026 Hosiana Hasibuan & Tim Gemastik SIK. All Rights Reserved.</p>
+            <p class="text-[10px] bg-slate-900 px-3 py-1 rounded-full border border-slate-800 text-slate-400">Rekomendasi Publikasi: OJS buletingemastik.id | Desain HCI</p>
+        </div>
+    </footer>
+
+    <!-- LOGIK GAME PREVIEW & INTERAKSI (JAVASCRIPT) -->
+    <script>
+        // Data Dialog per Layar
+        const dialogs = {
+            1: "Sejak proyek misterius itu beroperasi di tengah laut, air kita menghitam karena minyak, Dek. Ikan-ikan mati, dan warga yang nekat makan langsung keracunan...",
+            2: "Sekarang keputusan di tanganmu, Dek. Kita bisa diam saja dan membiarkan laut hancur, atau mengantarkanmu langsung menggunakan kapal sewaan untuk mengambil sampel air hitam tersebut...",
+            3: "Sistem Pemindai Berhasil! Analisis kimia menunjukkan adanya kontaminasi hidrokarbon minyak berat sebesar 85% dan penurunan oksigen terlarut secara ekstrem."
+        };
+
+        const scenarioTexts = {
+            1: "Layar 1 memperkenalkan masalah utama dari penuturan warga lokal kepada Gen-Z yang baru sampai di lokasi pesisir.",
+            2: "Layar 2 mengimplementasikan sistem pilihan bercabang (Branching Narrative) sebagai perwujudan dari metode interaktivitas HCI.",
+            3: "Layar 3 menampilkan dasbor analisis data ekosistem digital untuk memberikan visualisasi sains kelautan secara ilmiah."
+        };
+
+        let currentScreen = 1;
+
+        // Inisialisasi awal dialog
+        document.getElementById('input-dialog').value = dialogs[1];
+
+        // Ganti Tab Utama
+        function changeTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-indigo-600/20');
+                btn.classList.add('bg-slate-800', 'text-slate-300');
+            });
+
+            const activeBtn = document.getElementById('btn-tab-' + tabId);
+            activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
+            activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-indigo-600/20');
+        }
+
+        // Pilih Layar Game
+        function selectScreen(screenNum) {
+            currentScreen = screenNum;
+            
+            // Highlight Button Layar
+            document.querySelectorAll('.screen-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white');
+                btn.classList.add('text-slate-400');
+            });
+            document.getElementById('screen-btn-' + screenNum).classList.remove('text-slate-400');
+            document.getElementById('screen-btn-' + screenNum).classList.add('bg-indigo-600', 'text-white');
+
+            // Update Label & Teks Skenario
+            const titles = { 1: "Layar 1: Dasbor Pasar", 2: "Layar 2: Pilihan Misi", 3: "Layar 3: Laboratorium" };
+            document.getElementById('screen-tag').innerText = titles[screenNum];
+            document.getElementById('scenario-desc').innerText = scenarioTexts[screenNum];
+
+            // Update Teks Dialog di Editor
+            document.getElementById('input-dialog').value = dialogs[screenNum];
+            updateDialog();
+
+            // Atur Visibilitas Konten sesuai Layar
+            const bottomArea = document.getElementById('ui-content-bottom');
+            if (screenNum === 1) {
+                bottomArea.classList.add('hidden');
+                document.getElementById('npc-avatar-1').style.display = 'block';
+                document.getElementById('npc-avatar-2').style.display = 'none';
+                document.getElementById('ui-npc-name').innerText = "Pak Jaka (Nelayan)";
+            } else if (screenNum === 2) {
+                bottomArea.classList.remove('hidden');
+                bottomArea.innerHTML = `
+                    <button class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-[10px] font-bold tracking-wide uppercase transition-all shadow-md">Opsi A: Cari Ikan Lain (Risiko Korban)</button>
+                    <button class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold tracking-wide uppercase transition-all shadow-md">Opsi B: Ambil Sampel Air (Lab Digital)</button>
+                `;
+                document.getElementById('npc-avatar-1').style.display = 'block';
+                document.getElementById('npc-avatar-2').style.display = 'none';
+                document.getElementById('ui-npc-name').innerText = "Pak Jaka (Nelayan)";
+            } else if (screenNum === 3) {
+                bottomArea.classList.remove('hidden');
+                bottomArea.innerHTML = `
+                    <button class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-750 text-white rounded text-[10px] font-bold tracking-wide uppercase transition-all shadow-lg shadow-indigo-600/20">Kirim Laporan Bukti ke Kementerian</button>
+                `;
+                document.getElementById('npc-avatar-1').style.display = 'none';
+                document.getElementById('npc-avatar-2').style.display = 'block';
+                document.getElementById('ui-npc-name').innerText = "Laboratorium Kognitif TIK";
+            }
+        }
+
+        // Ubah Background Canvas secara dinamis
+        function setCanvasBg(hexColor) {
+            const canvas = document.getElementById('game-canvas');
+            canvas.style.background = hexColor;
+        }
+
+        // Sinkronisasi Live Editor ke Kanvas Preview
+        function updateMetrics() {
+            const airVal = document.getElementById('input-air').value;
+            const korbanVal = document.getElementById('input-korban').value;
+
+            document.getElementById('val-air').innerText = airVal + "%";
+            document.getElementById('val-korban').innerText = korbanVal;
+
+            const airText = document.getElementById('ui-air-display');
+            const korbanText = document.getElementById('ui-korban-display');
+
+            airText.innerText = `Kualitas Air: ${airVal}% ` + (airVal < 40 ? "(Kritis)" : (airVal < 70 ? "(Sedang)" : "(Normal)"));
+            korbanText.innerText = `Korban: ${korbanVal} Warga`;
+
+            // Dinamis ganti warna jika normal/kritis
+            if (airVal < 40) {
+                airText.className = "text-[10px] sm:text-xs font-bold font-game tracking-wide text-red-400";
+            } else {
+                airText.className = "text-[10px] sm:text-xs font-bold font-game tracking-wide text-emerald-400";
+            }
+        }
+
+        function updateNPC() {
+            const npcSelect = document.getElementById('input-npc').value;
+            const npcName = document.getElementById('ui-npc-name');
+
+            if (npcSelect === 'warlok1') {
+                npcName.innerText = "Pak Jaka (Nelayan)";
+                document.getElementById('npc-avatar-1').style.display = 'block';
+                document.getElementById('npc-avatar-2').style.display = 'none';
+            } else {
+                npcName.innerText = "Ibu Aminah (Pedagang Pasar)";
+                document.getElementById('npc-avatar-1').style.display = 'none';
+                document.getElementById('npc-avatar-2').style.display = 'block';
+            }
+        }
+
+        function updateDialog() {
+            const text = document.getElementById('input-dialog').value;
+            document.getElementById('ui-dialog-text').innerText = text;
+            dialogs[currentScreen] = text;
+        }
+
+        // Fitur copy to clipboard anti-iframe break
+        function copyDialogToClipboard() {
+            const tempInput = document.createElement("textarea");
+            tempInput.value = document.getElementById('ui-dialog-text').innerText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+            
+            alert("Teks dialog berhasil disalin ke papan klip!");
+        }
+
+        // Fitur ekspor gambar canvas langsung ke file PNG berkualitas tinggi (DIOPTIMALKAN)
+        function exportCanvasToPNG() {
+            const canvasContainer = document.getElementById('game-canvas');
+            
+            // Tambahkan kelas pembantu untuk mematikan animasi sementara agar tidak macet/freeze
+            canvasContainer.classList.add('no-animation');
+            
+            // Tunggu 50ms agar browser merender status static
+            setTimeout(() => {
+                html2canvas(canvasContainer, {
+                    scale: 2, // Meningkatkan resolusi gambar hasil ekspor agar tajam di Word
+                    backgroundColor: null,
+                    useCORS: true,
+                    logging: false
+                }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `GEMASTIK_UI_Layar_${currentScreen}_Hosiana_Hasibuan.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    
+                    // Kembalikan animasi setelah ekspor selesai
+                    canvasContainer.classList.remove('no-animation');
+                }).catch(err => {
+                    console.error("Kesalahan ekspor html2canvas:", err);
+                    alert("Gagal mengunduh gambar secara otomatis. Jangan khawatir! Silakan gunakan shortcut Windows (Win+Shift+S) atau Mac (Cmd+Shift+4) untuk mengambil gambar preview.");
+                    canvasContainer.classList.remove('no-animation');
+                });
+            }, 50);
+        }
+    </script>
+</body>
+</html>
